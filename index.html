@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matchstick Game 🎮🔥</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Mobile Compatibility */
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        @media only screen and (max-width: 600px) {
+            h1 {
+                font-size: 2rem;
+            }
+            .button-container button {
+                width: 100%;
+                margin: 5px 0;
+            }
+            #game-mode {
+                padding: 10px;
+            }
+            #rules {
+                padding: 10px;
+            }
+        }
+
+        /* Matchsticks Style */
+        .matchstick {
+            width: 12px;
+            height: 60px;
+            background-color: #ff5722;
+            border-radius: 3px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            margin: 2px;
+            /* Adding a gradient effect for more realism */
+            background: linear-gradient(135deg, #ff5722 0%, #d32f2f 100%);
+        }
+
+        /* Player Images */
+        .player-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .player img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+        }
+        .player.highlighted img {
+            border-color: #ff9800;
+        }
+        .player p {
+            font-weight: bold;
+        }
+
+        /* Hide/Show Game Elements */
+        #game {
+            display: none;
+        }
+        #game-mode {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color: #ff5722; font-size: 3rem; text-shadow: 2px 2px #ff9800;">🔥 Matchstick Madness 🎉</h1>
+
+    <div id="rules" style="background-color: #ffeb3b; padding: 15px; border-radius: 10px; margin: 20px auto; max-width: 600px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+        <h2 style="color: #3f51b5;">📜 Game Rules:</h2>
+        <ul style="text-align: left; font-size: 1.2rem; color: #000; line-height: 1.6;">
+            <li>There are 15 matchsticks on the table.</li>
+            <li>Players take turns to pick 1, 2, or 3 matchsticks.</li>
+            <li>The player forced to take the last matchstick loses the game.</li>
+            <li>Be strategic and have fun! 🎉</li>
+        </ul>
+    </div>
+
+    <div id="game-mode" style="background-color: #fce4ec; padding: 20px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+        <p style="font-size: 1.5rem; color: #d81b60; font-weight: bold;">🎈 Choose your game mode:</p>
+        <button style="background-color: #4caf50; color: white; border: none; padding: 15px 30px; border-radius: 10px; font-size: 1rem; cursor: pointer; margin: 10px;" onclick="setGameMode(false)">🤝 Play with Player 2</button>
+        <button style="background-color: #2196f3; color: white; border: none; padding: 15px 30px; border-radius: 10px; font-size: 1rem; cursor: pointer; margin: 10px;" onclick="setGameMode(true)">🤖 Play with Computer</button>
+    </div>
+
+    <div id="game" style="display: none; margin-top: 20px;">
+        <div id="matchsticks" style="margin: 20px 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 5px;">
+            <!-- Matchsticks will be displayed here -->
+        </div>
+        <p id="remaining-sticks" style="font-size: 1.5rem; color: #f57c00; font-weight: bold;">🔥 Remaining Sticks: 15</p>
+        <p id="turn-indicator" style="font-size: 1.5rem; color: #1976d2; font-weight: bold;"></p>
+        <div class="button-container">
+            <button style="background-color: #ff9800; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 1rem; cursor: pointer; margin: 5px;" onclick="takeSticks(1)">🖐️ Take 1 Stick</button>
+            <button style="background-color: #8e24aa; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 1rem; cursor: pointer; margin: 5px;" onclick="takeSticks(2)">✌️ Take 2 Sticks</button>
+            <button style="background-color: #cddc39; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 1rem; cursor: pointer; margin: 5px;" onclick="takeSticks(3)">🤟 Take 3 Sticks</button>
+        </div>
+        <p class="message" id="message" style="font-size: 1.5rem; font-weight: bold; color: #e91e63; margin-top: 20px;"></p>
+        <button onclick="resetGame()" style="display: none; background-color: #f44336; color: white; border: none; padding: 15px 30px; border-radius: 10px; font-size: 1rem; cursor: pointer;" id="restart-button">🔄 Restart Game</button>
+
+        <!-- Player Info -->
+        <div class="player-container">
+            <div id="player1" class="player highlighted">
+                <img src="player1.png" alt="Player 1"> <!-- Placeholder Image -->
+                <p>Player 1</p>
+            </div>
+            <div id="player2" class="player">
+                <img src="player2.png" alt="Player 2"> <!-- Placeholder Image -->
+                <p>Player 2</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let remainingSticks = 15;
+        let currentPlayer = 1; // 1 for Player 1, 2 for Player 2
+        let isPlayerVsComputer = false;
+        let gameStarted = false;
+
+        // Update the matchstick display
+        function renderMatchsticks(count) {
+            const matchsticksDiv = document.getElementById('matchsticks');
+            matchsticksDiv.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const stick = document.createElement('div');
+                stick.classList.add('matchstick');
+                matchsticksDiv.appendChild(stick);
+            }
+        }
+
+        // Update remaining sticks
+        function updateRemainingSticks() {
+            document.getElementById('remaining-sticks').textContent = `🔥 Remaining Sticks: ${remainingSticks}`;
+        }
+
+        // Highlight the current player
+        function highlightPlayer() {
+            document.getElementById('player1').classList.toggle('highlighted', currentPlayer === 1);
+            document.getElementById('player2').classList.toggle('highlighted', currentPlayer === 2);
+            document.getElementById('turn-indicator').textContent = currentPlayer === 1 ? '🎮 Player 1\'s Turn' : '🎮 Player 2\'s Turn';
+        }
+
+        // Handle stick-taking logic
+        function takeSticks(stickCount) {
+            if (!gameStarted || remainingSticks <= 0) return;
+
+            remainingSticks -= stickCount;
+            updateRemainingSticks();
+
+            if (remainingSticks <= 0) {
+                document.getElementById('message').textContent = `🔥 Player ${currentPlayer} loses!`;
+                document.getElementById('restart-button').style.display = 'block';
+                return;
+            }
+
+            // Switch turns
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            highlightPlayer();
+            renderMatchsticks(remainingSticks);
+
+            // If playing with computer, trigger the computer move
+            if (isPlayerVsComputer && currentPlayer === 2) {
+                setTimeout(() => {
+                    computerMove();
+                }, 1000);
+            }
+        }
+
+        // Computer move logic (AI)
+        function computerMove() {
+            const stickCount = Math.min(3, Math.floor(Math.random() * 3) + 1); // Randomly pick 1, 2, or 3
+            remainingSticks -= stickCount;
+            updateRemainingSticks();
+
+            if (remainingSticks <= 0) {
+                document.getElementById('message').textContent = '🔥 Computer loses!';
+                document.getElementById('restart-button').style.display = 'block';
+                return;
+            }
+
+            currentPlayer = 1;
+            highlightPlayer();
+            renderMatchsticks(remainingSticks);
+        }
+
+        // Start the game (after selecting mode)
+        function setGameMode(isComputerMode) {
+            isPlayerVsComputer = isComputerMode;
+            document.getElementById('game-mode').style.display = 'none';
+            document.getElementById('game').style.display = 'block';
+            gameStarted = true;
+            remainingSticks = 15;
+            currentPlayer = 1;
+            renderMatchsticks(remainingSticks);
+            highlightPlayer();
+        }
+
+        // Reset the game and return to the home page
+        function resetGame() {
+            document.getElementById('game').style.display = 'none';
+            document.getElementById('game-mode').style.display = 'block';
+            gameStarted = false;
+            remainingSticks = 15;
+            currentPlayer = 1;
+            document.getElementById('message').textContent = '';
+            document.getElementById('restart-button').style.display = 'none';
+        }
+
+        // Initialize with Player 1's turn
+        highlightPlayer();
+    </script>
+</body>
+</html>
